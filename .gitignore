@@ -1,0 +1,14 @@
+# Entorno virtual (se recrea con: pip install -r requirements.txt)
+.venv/
+venv/
+env/
+
+# Python / Jupyter
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+
+# Sistema
+.DS_Store
+Thumbs.db
+desktop.ini

@@ -1,57 +1,54 @@
-# nextONE 1.1
+# Pronóstico mensual de energía en las Zonas No Interconectadas (ZNI) de Colombia
 
-Plataforma de comunidad Makers: encuentros, aprendizaje, personas, retos, soluciones, proyectos y semilleros. React 19 + TypeScript + Vite + Supabase; una sola aplicación en la raíz.
+Pronóstico de la energía activa (kWh) de cada localidad de las ZNI a 1 y 3 meses, con datos de telemetría del Centro Nacional de Monitoreo (CNM) del IPSE (enero de 2020 a junio de 2023, 133 localidades).
 
-**Para actualizar tu plataforma existente, sigue ACTUALIZAR_V11.md.** Las instrucciones de versiones anteriores se conservan como historial y no reemplazan esa guía.
+## Resultado principal
+Con validación temporal de origen rodante (julio de 2022 a junio de 2023), un **Random Forest global** (un solo modelo para todas las localidades) obtiene un sMAPE de **11,0 % a 1 mes** y de **13,6 % a 3 meses**. Supera a las referencias simples, aunque la mejora solo es estadísticamente significativa a 3 meses. El error es de ~5–7 % en las localidades grandes con servicio de 24 h y de 13–20 % en las veredas con servicio limitado.
 
-## Desarrollo
-
-Usa Node.js 24. Copia `.env.example` a `.env.local` y completa los valores públicos de tu proyecto. El cliente nunca debe recibir `service_role`, contraseñas de base de datos ni secretos OAuth.
-
-```sh
-pnpm install --frozen-lockfile
-pnpm dev
-pnpm check:types
-pnpm test
-pnpm build
-pnpm test:browser:all
+## Estructura
+```
+datos/raw/            datos originales (energia.csv, ENERGIA.tif)
+datos/interim/        datos renombrados (Sección 1)
+datos/processed/      panel limpio, bitácora de limpieza, predicciones y métricas
+notebooks/            01 → 05, ejecutar en orden
+figuras/              todas las gráficas (prefijo = sección)
+docs/COMPARATIVA.md   proyecto original vs corregido, sección por sección
+docs/GUION_PRESENTACION.md
+original/             notebook original, sin modificar
 ```
 
-El archivo pnpm-lock.yaml mantiene las versiones instaladas y no cambió en esta entrega. En Windows, si pnpm no puede crear enlaces simbólicos, `npm install --package-lock=false` permite instalar sin reemplazar ese archivo. La comprobación con npm se realizó sin scripts de instalación. Las pruebas de navegador usan Chrome instalado; alternativamente instala Chromium con Playwright y define NEXTONE_BROWSER_CHANNEL=chromium. No son pruebas contra tu base de producción.
+## Secciones
+| Notebook | Contenido |
+|---|---|
+| `01_entender_datos` | Diccionario de datos, cobertura, problemas de calidad, definición del problema |
+| `02_limpieza` | 8 reglas de limpieza basadas en el factor de carga y bitácora de cambios |
+| `03_exploracion_series` | Efecto calendario, estacionalidad, tendencia, volatilidad, oferta vs demanda, COVID |
+| `04_modelos` | 3 referencias + ETS local + Random Forest y Gradient Boosting globales; origen rodante; bootstrap |
+| `05_comparativa_final` | Reproducción del modelo original y demostración de la fuga de información |
 
-## Base de datos
+## Reproducir
+```powershell
+python -m venv .venv
+.\.venv\Scripts\python.exe -m pip install -r requirements.txt
+.\.venv\Scripts\jupyter.exe lab
+```
+En Linux o macOS:
+```bash
+python3 -m venv .venv
+.venv/bin/pip install -r requirements.txt
+.venv/bin/jupyter lab
+```
+Para ejecutar los cinco notebooks sin abrir Jupyter:
+```bash
+cd notebooks && for n in 0*.ipynb; do ../.venv/bin/jupyter nbconvert --to notebook --execute --inplace "$n"; done
+```
+Ejecuta los notebooks en orden (01 → 05): cada uno lee lo que guardó el anterior.
 
-La carpeta `supabase/migrations` contiene 001–014 en orden. Una base que ya tiene 001–012 solo necesita 013 y 014. Conserva el historial real de migraciones y usa la integración GitHub/Supabase existente. No vuelvas a ejecutar migraciones aplicadas ni el instalador histórico `INSTALAR_NEXTONE.sql` sobre tu plataforma.
-
-En una instalación totalmente nueva, aplica 001–014 una vez, en orden, usando migraciones de Supabase. Después de registrar tu primera cuenta, `supabase/activate-admin.sql` permite activar al fundador sustituyendo el correo por el correcto. Las cuentas nuevas continúan pendientes de aprobación o invitación.
-
-## Novedades de administración 1.1
-
-Panel de control con tarjetas accionables, gráficos reales, bandejas desplegables y paginadas, búsqueda/estado, aprobación de ingreso con correo verificado, historial de revisión de reportes, prioridad y asignación, invitaciones con trazabilidad, alertas internas y cola de avisos por correo. Distribución global de miembros y actividad por país, región y ciudad declarados voluntariamente y protegidos por permisos.
-
-Los avisos por correo necesitan configuración de Vercel y un Database Webhook en Supabase. No se envían con subir únicamente el ZIP. Consulta ACTUALIZAR_V11.md; los destinatarios se configuran fuera del código público.
-
-El catálogo carga descripciones recortadas y obtiene el contenido completo al abrirlo. Administración, Indicadores y el editor de perfil se descargan bajo demanda. Las bandejas administrativas usan páginas de 20 y los detalles se consultan al desplegarlos. El directorio y el catálogo aún mantienen sus metadatos autorizados en memoria; esta versión no promete escalabilidad ilimitada ni sustituye mediciones de carga en producción.
-
-## Flujos conservados
-
-- Indicadores exclusivos de administradores en navegación, vista y funciones de base de datos, incluidas las funciones antiguas. Miembros y organizadores conservan la valoración pública de contenidos y su propia actividad.
-- Retos: reglas, instrucciones, entregables, criterios ponderados, cupos, fechas, fases y gestión de participantes. Una publicación guarda metadatos, reglas y diseño de forma atómica.
-- Participantes: explorar, filtrar, iniciar, salir antes de entregar, usar plantilla o lienzo en blanco, entregar prototipo HTTPS, revisar su solución o retirarla para reemplazarla mientras el reto lo permita.
-- Evaluación: calificación comunitaria y feedback oficial separados; el organizador responsable evalúa cada criterio y obtiene un resultado ponderado. El reto no se finaliza con soluciones sin evaluación definitiva.
-- Historial de revisiones de soluciones a partir de esta versión. El servidor bloquea las ediciones fuera de plazo, las revisiones deshabilitadas y las entregas con evaluación final. Administración mantiene capacidad de corrección.
-- Indicadores: período Colombia UTC−5, personas únicas, acciones, media/mediana y distribución de utilidad, cohortes de inicio a entrega, días sin actividad, comparación histórica cuando hay base, tablas paginadas, exportaciones y pendientes de feedback. Los análisis de temas, metodologías, intereses y cohortes se conservan y se consultan al abrir su panel.
-- Recuperación: solicitud, reenvío con espera, confirmación de contraseña, mostrar/ocultar, enlaces vencidos o usados, nueva solicitud y cierre opcional de otras sesiones. OAuth GitHub/Google se conserva. Consulta la configuración de correo en ACTUALIZAR_V1.md.
-- Avatar vectorial animado: puntos de partida femenino/masculino/neutro, rasgos combinables, rostro, silueta, ojos, vello facial, once peinados, seis prendas y cinco opciones de movimiento. Se guarda en la cuenta, aparece en navegación/perfil/directorio y respeta reducir movimiento.
-
-Se mantienen el catálogo de 45 composiciones interactivas, el editor por bloques, las estructuras anteriores, borradores recuperables, progreso sincronizado, redes y temas de perfil, selector Unicode, proyectos/evaluador independiente, evidencias, chat, invitaciones, moderación y eliminación autorizada.
-
-## Despliegue
-
-Sube **el contenido** de la carpeta `nextONE` a la raíz del mismo repositorio. `package.json`, `src`, `public`, `supabase` y `api` quedan directamente allí. Vercel: mismo proyecto y dominio, Root Directory raíz, framework Vite, salida dist, comando npm run build, Node.js 24. No hace falta importar otro proyecto.
-
-Variables públicas: VITE_SUPABASE_URL, VITE_SUPABASE_PUBLISHABLE_KEY y VITE_GOOGLE_LOGIN_ENABLED. El asistente opcional de IA usa además APP_ORIGIN, OPENAI_API_KEY y OPENAI_MODEL solo en Vercel; conserva sus valores si ya funciona. Sin configuración devuelve una explicación y la ficha manual sigue disponible.
-
-## Verificación
-
-Consulta VERIFICACIONES.md. Las pruebas locales cubren reglas SQL/RLS y recorridos en navegador con transporte/Auth de prueba. El correo real, OAuth real, integración de migraciones, Storage alojado y despliegue deben comprobarse en tu cuenta después de actualizar. No se hizo push ni se cambió la base alojada desde esta entrega.
+## Referencias principales
+- Colmenares-Quintero, R. F. et al. (2022). *Data Analysis of Electricity Service in Colombia's Non-Interconnected Zones through Different Clustering Techniques*. Energies, 15(20), 7644.
+- Colmenares-Quintero, R. F. et al. (2021). *Analysis of the energy service in non-interconnected zones of Colombia using business intelligence*. Cogent Engineering.
+- Gil-Vera, V. D. (2016). *Pronóstico de la demanda mensual de electricidad con series de tiempo*. Revista EIA, 13(26). DOI 10.24050/reia.v13i26.749.
+- Castaño, E. (2010). *El "efecto calendario" y la especificación de un modelo de series de tiempo para la demanda de electricidad*. Lecturas de Economía. DOI 10.17533/udea.le.n35a5115.
+- Colmenares-Quintero, R. F. et al. (2026). *Decision tree-based prediction of economic activities in Colombia's Non-Interconnected Zones*. Energy Sources, Part B.
+- Bustos et al. (2025). *Evaluating Sampling Strategies for Characterizing Energy Demand in Regions of Colombia Without AMI Infrastructure*. Applied Sciences, 15(17), 9588.
+- Montero-Manso, P. & Hyndman, R. J. (2021). *Principles and algorithms for forecasting groups of time series: Locality and globality*. International Journal of Forecasting.
